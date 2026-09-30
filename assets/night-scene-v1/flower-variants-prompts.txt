@@ -1,0 +1,22 @@
+Generated using built-in image_gen, transparent_background=true.
+
+Shared prompt:
+Generate a production-ready isolated flower foreground PNG with TRUE TRANSPARENT RGBA background. Match the user's original anime blue flower meadow: soft hand-painted Japanese animation background art, rounded delicate four-petalled flowers gathered in natural clusters, icy cyan and moonlit white petals with medium blue shadow folds and deep blue slender stems. Organic botanical growth, no florist wrapping, no vase. No crystalline texture or metallic sheen. Clear petal detail, subtle cool highlights, no broad glow or fog behind flowers. Empty spaces between branches fully transparent. No people, landscape, ground, text, UI, checkerboard or solid backdrop. Keep all blossom heads fully inside frame with 8 percent transparent top and side margins. Stems may end at bottom. 
+
+flowers-tall-spire.png
+Square canvas. Tall narrow upright silhouette: one compact oval cluster of many little flowers at upper center on a long graceful stem, two tiny side buds at different heights, sparse thin leaves. Distinctively slender tower shape, width only 40 percent of image. Most of canvas empty transparent space. Not a huge round hydrangea ball.
+
+flowers-twin-peaks.png
+Square canvas. Two distinct rounded flower heads at different heights, taller and larger on left, shorter on right, separated by a clear V-shaped transparent gap. Each head consists of many small four-petalled flowers. Branches join loosely near bottom, asymmetrical twin peaks silhouette, no third big head.
+
+flowers-low-border.png
+Wide landscape canvas. Low horizontal foreground bank of blue-white flower clusters spreading across bottom third, irregular scalloped silhouette with several small humps, short stems, many small flowers and three slightly larger blossoms. Broad shallow shape, no tall central stem, upper two thirds transparent. Natural meadow border, no soil.
+
+flowers-wind-arc.png
+Square canvas. A graceful crescent-shaped flowering branch leans dramatically from bottom left toward upper right, gently arcing, with three graduated flower clusters along the curve and a main luminous cluster near upper right. Clear diagonal silhouette with large transparent opening under the arch. Natural stems, wind-swept organic growth.
+
+flowers-airy-branches.png
+Square canvas. Airy fan of five thin branching stems at varied heights, each carrying a small loose group of four-petalled flowers and tiny buds. Large transparent gaps, delicate meadow growth, slender open silhouette. No dense ball or solid flower mass. Beautiful variations in facing angles.
+
+flowers-full-mound.png
+Square canvas. Broad lush asymmetrical mound of clustered flowers, largest rounded cluster low center, two smaller overlapping clusters nestled on sides, width greater than height. Many small soft four-petalled icy cyan blooms, a handful of prominent white blossoms. Almost no exposed long stems, compact abundant domed foreground clump, small irregular leaves below. Top third transparent.
