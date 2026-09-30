@@ -1,0 +1,1 @@
+function e(e,t){let n=Math.max(0,Math.min(Math.floor(t),e.length));return Array.from({length:n},(t,r)=>e.filter((e,t)=>t%n===r))}function t(e,t){return t>0?(e%t+t)%t:0}function n(e,t){return e>0&&t>0?Math.ceil(e/t)+3:0}function r(e,t){return Math.floor(e/t)-1}export{t as i,r as n,e as r,n as t};
