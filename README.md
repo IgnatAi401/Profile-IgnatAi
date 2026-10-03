@@ -2,4 +2,4 @@
 
 This is Ignat's personal website.
 
-https://IgnatAy.github.io/Profile-IgnatAy/#about
+https://ignatai401.github.io/Profile-IgnatAy/#about
