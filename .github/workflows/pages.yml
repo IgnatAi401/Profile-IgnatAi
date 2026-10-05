@@ -1,44 +1,130 @@
+# Publishes me.ignat.ai to Cloudflare Workers (static assets only).
+#
+# - push to main / workflow_dispatch: deploy the verified release files.
+# - schedule: once a day, after orbit.ignat.ai's 03:17 UTC refresh, redeploy
+#   with that site's latest ephemerides, so the orbit map stays current.
+#
+# Only the files listed in release-manifest.json are published, after their
+# hashes are checked. data/orbits.json and data/spacecraft.json are then
+# replaced by the copies on orbit.ignat.ai (cut down to what this page uses)
+# when those are valid and newer; otherwise the committed snapshot is kept.
+# The refreshed data is never committed, so the manifest stays exact.
 name: Publish verified static website
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '41 4 * * *'
 
 permissions:
   contents: read
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - name: Verify exact release files
         run: |
           python3 - <<'PY'
-          import hashlib, json, pathlib
+          import hashlib, json, pathlib, shutil
           manifest = json.loads(pathlib.Path('release-manifest.json').read_text())
           assert manifest['version'] == 1
+          site = pathlib.Path('_site')
           for name, expected in manifest['files'].items():
               path = pathlib.Path(name)
               assert not path.is_absolute() and '..' not in path.parts
               assert hashlib.sha256(path.read_bytes()).hexdigest() == expected, name
+              (site / path).parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(path, site / path)
           print('Verified', len(manifest['files']), 'release files')
           PY
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
+      - name: Refresh the ephemerides from orbit.ignat.ai
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, time, urllib.request
+          from datetime import datetime
+
+          GROUPS = ['starlink', 'iridium', 'orbcomm', 'gps', 'glonass', 'galileo', 'beidou']
+          VECTORS = ['soho', 'jwst', 'euclid']
+          LUNAR = ['lro', 'danuri']
+          DAY = 86400000
+          data = pathlib.Path('_site/data')
+
+          def ms(text):
+              return datetime.fromisoformat(text.replace('Z', '+00:00')).timestamp() * 1000
+
+          def live(name):
+              request = urllib.request.Request(
+                  f'https://orbit.ignat.ai/data/{name}',
+                  headers={'User-Agent': 'me.ignat.ai deploy'},
+              )
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  return json.load(response)
+
+          def orbits(old, new):
+              assert new['fields'] == old['fields'], 'fields changed'
+              width = len(old['fields'])
+              groups = {}
+              for key in GROUPS:
+                  rows = new['groups'][key]
+                  assert len(rows) % width == 0, key
+                  assert len(rows) >= 0.8 * len(old['groups'][key]), f'{key}: {len(rows) // width} satellites'
+                  groups[key] = rows
+              assert isinstance(new['reference'], (int, float))
+              return {k: new[k] for k in ('source', 'fetched', 'reference', 'fields')} | {'groups': groups}
+
+          def spacecraft(old, new):
+              now = time.time() * 1000
+              assert new['start'] <= now and new['stop'] >= now + 7 * DAY, 'window does not cover the next week'
+              out = {k: new[k] for k in ('source', 'fetched', 'start', 'stop')}
+              for part, keys in (('vectors', VECTORS), ('lunar', LUNAR)):
+                  assert new[part]['step'] == old[part]['step'], f'{part} step changed'
+                  out[part] = {'step': new[part]['step'], 'tracks': {k: new[part]['tracks'][k] for k in keys}}
+              return out
+
+          for name, slim in (('orbits.json', orbits), ('spacecraft.json', spacecraft)):
+              path = data / name
+              old = json.loads(path.read_text())
+              try:
+                  new = live(name)
+                  if ms(new['fetched']) <= ms(old['fetched']):
+                      print(f'{name}: the committed copy is as new; kept')
+                      continue
+                  path.write_text(json.dumps(slim(old, new), separators=(',', ':')))
+                  print(f"{name}: refreshed, fetched {new['fetched']}")
+                  if ms(new['fetched']) < time.time() * 1000 - 3 * DAY:
+                      print(f'::warning::{name} on orbit.ignat.ai is more than 3 days old')
+              except Exception as error:
+                  print(f'::warning::{name}: kept the committed copy ({error!r})')
+          PY
+      - uses: actions/setup-node@v7
         with:
-          path: .
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v5
+          node-version: 24
+      # Only this step sees the Cloudflare token.
+      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Only the custom domain: no workers.dev or preview URLs. The custom
+          # domain creates its own DNS record; the zone must not already have
+          # one for me.ignat.ai.
+          cat > wrangler.toml <<'TOML'
+          name = "profile-ignatai"
+          compatibility_date = "2026-09-25"
+          workers_dev = false
+          preview_urls = false
+          routes = [{ pattern = "me.ignat.ai", custom_domain = true }]
+
+          [assets]
+          directory = "./_site"
+          TOML
+          npx --yes wrangler@4.147.0 deploy
