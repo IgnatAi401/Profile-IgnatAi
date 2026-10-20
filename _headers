@@ -1,0 +1,10 @@
+# Cloudflare Workers static assets. Vite names /assets/<file> by content hash,
+# so browsers keep them without revalidating. `:file` stops at a slash, so the
+# unhashed /assets/night-scene-v1/ images keep the default revalidation.
+/assets/:file
+  Cache-Control: public, max-age=31536000, immutable
+
+# Every Alice request carries ?v=<revision> (models/alice/alice-models.ts), so
+# changed model files must ship with a new revision to reach returning visitors.
+/models/*
+  Cache-Control: public, max-age=31536000, immutable
